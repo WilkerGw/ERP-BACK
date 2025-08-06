@@ -1,7 +1,11 @@
 import app from './app';
 import mongoose from 'mongoose';
 
-const PORT = process.env.PORT || 3001;
+// --- CORREÇÃO APLICADA AQUI ---
+// Usamos parseInt() para garantir que a porta seja um número.
+// O '10' é para garantir que a conversão seja feita na base decimal.
+const PORT = parseInt(process.env.PORT || '3001', 10);
+
 const mongoUri = process.env.MONGO_URI as string;
 
 mongoose.connect(mongoUri)
