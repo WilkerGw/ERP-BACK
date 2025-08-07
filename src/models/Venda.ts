@@ -3,7 +3,7 @@ import { Schema, model, Document } from 'mongoose';
 interface ItemVenda {
   produto: Schema.Types.ObjectId;
   quantidade: number;
-  precoUnitario: number; // Preço no momento da venda (pode ter desconto)
+  precoUnitario: number;
 }
 
 interface Pagamento {
@@ -37,7 +37,9 @@ const VendaSchema = new Schema<IVenda>({
     },
     parcelas: { type: Number, default: 1 },
   },
-  dataVenda: { type: Date, default: Date.now },
+  // --- MUDANÇA AQUI ---
+  // Removemos o 'default: Date.now' e tornamos o campo obrigatório
+  dataVenda: { type: Date, required: true },
 }, { timestamps: true });
 
 export default model<IVenda>('Venda', VendaSchema);
