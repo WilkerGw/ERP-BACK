@@ -10,6 +10,8 @@ import produtoRoutes from './routes/produtoRoutes';
 import vendaRoutes from './routes/vendaRoutes';
 import boletoRoutes from './routes/boletoRoutes';
 import agendamentoRoutes from './routes/agendamentoRoutes';
+import insightRoutes from './routes/insightRoutes'; 
+
 
 dotenv.config();
 const app = express();
@@ -24,6 +26,8 @@ app.use('/api/produtos', produtoRoutes);
 app.use('/api/vendas', vendaRoutes);
 app.use('/api/boletos', boletoRoutes);
 app.use('/api/agendamentos', agendamentoRoutes);
+app.use('/api/insights', insightRoutes); 
+
 
 app.get('/api/health', (req, res) => {
   res.send('Backend está funcionando!');
