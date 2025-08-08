@@ -11,6 +11,8 @@ import vendaRoutes from './routes/vendaRoutes';
 import boletoRoutes from './routes/boletoRoutes';
 import agendamentoRoutes from './routes/agendamentoRoutes';
 import insightRoutes from './routes/insightRoutes'; 
+import relatorioRoutes from './routes/relatorioRoutes';
+
 
 
 dotenv.config();
@@ -27,6 +29,9 @@ app.use('/api/vendas', vendaRoutes);
 app.use('/api/boletos', boletoRoutes);
 app.use('/api/agendamentos', agendamentoRoutes);
 app.use('/api/insights', insightRoutes); 
+app.use('/api/relatorios', relatorioRoutes);
+
+
 
 
 app.get('/api/health', (req, res) => {
