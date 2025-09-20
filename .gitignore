@@ -1,6 +1,5 @@
 # Dependências
-/frontend/node_modules
-/backend/node_modules
+/node_modules
 
 # Arquivos de Build
 /frontend/.next
