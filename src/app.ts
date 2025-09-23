@@ -1,3 +1,5 @@
+// Caminho: ERP-BACK-main/src/app.ts
+
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -12,7 +14,7 @@ import boletoRoutes from './routes/boletoRoutes';
 import agendamentoRoutes from './routes/agendamentoRoutes';
 import insightRoutes from './routes/insightRoutes'; 
 import relatorioRoutes from './routes/relatorioRoutes';
-
+import caixaRoutes from './routes/caixaRoutes'; // Importação da nova rota
 
 
 dotenv.config();
@@ -30,7 +32,7 @@ app.use('/api/boletos', boletoRoutes);
 app.use('/api/agendamentos', agendamentoRoutes);
 app.use('/api/insights', insightRoutes); 
 app.use('/api/relatorios', relatorioRoutes);
-
+app.use('/api/caixa', caixaRoutes); // Registro da nova rota
 
 
 
