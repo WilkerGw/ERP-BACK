@@ -2,12 +2,13 @@
 
 import mongoose, { Document, Schema } from 'mongoose';
 
-// 1. Definimos e exportamos a interface ICliente
+// Interface exportada com a propriedade _id explícita
 export interface ICliente extends Document {
+  _id: mongoose.Schema.Types.ObjectId; // <-- CORREÇÃO PRINCIPAL AQUI
   fullName: string;
   cpf: string;
   phone: string;
-  birthDate: Date; // 2. Corrigimos o nome do campo para 'birthDate' e o tipo para Date
+  birthDate: Date;
   gender?: string;
   address?: string;
   cep?: string;
@@ -20,13 +21,14 @@ export interface ICliente extends Document {
   eixoEsquerdo?: string;
   adicao?: string;
   vencimentoReceita?: Date;
+  user: mongoose.Schema.Types.ObjectId;
 }
 
 const clienteSchema = new Schema<ICliente>({
   fullName: { type: String, required: true },
   cpf: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
-  birthDate: { type: Date, required: true }, // 2. Nome do campo corrigido aqui
+  birthDate: { type: Date, required: true },
   gender: { type: String },
   address: { type: String },
   cep: { type: String },
@@ -39,10 +41,14 @@ const clienteSchema = new Schema<ICliente>({
   eixoEsquerdo: { type: String },
   adicao: { type: String },
   vencimentoReceita: { type: Date },
+  user: { // Adicionando a referência ao usuário que faltava no schema
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
 }, {
   timestamps: true,
   collection: 'clients'
 });
 
-// 3. Usamos a interface ao exportar o modelo
 export default mongoose.model<ICliente>('Cliente', clienteSchema);
