@@ -1,8 +1,10 @@
+// Caminho: ERP-BACK-main/src/__tests__/boletos.integration.test.ts
+
 import request from 'supertest';
 import mongoose from 'mongoose';
 import app from '../app';
 import Boleto from '../models/Boleto';
-import Cliente, { ICliente } from '../models/Cliente';
+import Cliente, { ICliente } from '../models/Cliente'; // <-- A interface ICliente já está importada
 import User, { IUser } from '../models/User';
 import jwt from 'jsonwebtoken';
 
@@ -18,7 +20,10 @@ describe('Testes de Integração para Boletos', () => {
     await Cliente.deleteMany({});
     
     const user: IUser = await User.create({ nome: 'Test User', email: 'boletotest@example.com', senha: 'password123' });
-    const cliente: ICliente = await Cliente.create({ fullName: 'Cliente dos Boletos', cpf: '987.654.321-00', phone: '1111', birthDate: new Date(), gender: 'Outro' });
+    
+    // --- CORREÇÃO AQUI ---
+    // Adicionamos a tipagem explícita ": ICliente" à variável cliente.
+    const cliente: ICliente = await Cliente.create({ fullName: 'Cliente dos Boletos', cpf: '987.654.321-00', phone: '1111', birthDate: new Date() });
     
     testClienteId = cliente._id.toString();
     token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
@@ -48,14 +53,12 @@ describe('Testes de Integração para Boletos', () => {
 
     expect(response.status).toBe(201);
     
-    // --- CORREÇÃO APLICADA AQUI ---
-    // Buscando pelo nome de campo correto: 'client'
     const boletosNoDB = await Boleto.find({ client: testClienteId });
     
     expect(boletosNoDB.length).toBe(3);
     expect(boletosNoDB[0].parcelValue).toBe(300);
     expect(boletosNoDB[0].description).toBe('Parcela 1/3');
-    expect(boletosNoDB[2].dueDate.getUTCMonth()).toBe(11);
+    expect(boletosNoDB[2].dueDate.getUTCMonth()).toBe(11); // Dezembro (mês 11 no JS Date)
   });
 
   it('Deve listar os boletos agrupados por mês via GET /api/boletos', async () => {
@@ -75,7 +78,7 @@ describe('Testes de Integração para Boletos', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.length).toBe(2);
-    expect(response.body[0]._id.mes).toBe(12);
+    expect(response.body[0]._id.mes).toBe(12); // Dezembro
     expect(response.body[0].boletos[0].parcelValue).toBe(250);
   });
 
