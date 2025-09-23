@@ -4,6 +4,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+
 // ... importações das rotas ...
 import authRoutes from './routes/authRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
@@ -14,12 +15,23 @@ import boletoRoutes from './routes/boletoRoutes';
 import agendamentoRoutes from './routes/agendamentoRoutes';
 import insightRoutes from './routes/insightRoutes'; 
 import relatorioRoutes from './routes/relatorioRoutes';
-import caixaRoutes from './routes/caixaRoutes'; // Importação da nova rota
+import caixaRoutes from './routes/caixaRoutes';
 
 
 dotenv.config();
 const app = express();
-app.use(cors());
+
+// --- CORREÇÃO DE CORS AQUI ---
+// Definimos explicitamente quais origens (domínios) podem aceder à nossa API.
+const corsOptions = {
+  origin: ['http://localhost:3000', 'https://erp-front-ebon.vercel.app'],
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+// --- FIM DA CORREÇÃO ---
+
 app.use(express.json());
 
 // Rotas da Aplicação
@@ -32,7 +44,7 @@ app.use('/api/boletos', boletoRoutes);
 app.use('/api/agendamentos', agendamentoRoutes);
 app.use('/api/insights', insightRoutes); 
 app.use('/api/relatorios', relatorioRoutes);
-app.use('/api/caixa', caixaRoutes); // Registro da nova rota
+app.use('/api/caixa', caixaRoutes);
 
 
 
@@ -40,4 +52,4 @@ app.get('/api/health', (req, res) => {
   res.send('Backend está funcionando!');
 });
 
-export default app; // A grande mudança: exportamos o app
+export default app;
