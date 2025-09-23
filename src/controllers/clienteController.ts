@@ -1,14 +1,29 @@
+// Caminho: ERP-BACK-main/src/controllers/clienteController.ts
+
 import { Request, Response } from 'express';
 import Cliente from '../models/Cliente';
 
-export const createCliente = async (req: Request, res: Response) => {
+// Definimos uma interface para a requisição que já passou pelo middleware de autenticação
+interface AuthRequest extends Request {
+  userId?: string;
+}
+
+export const createCliente = async (req: AuthRequest, res: Response) => {
   try {
     const { cpf } = req.body;
-    const clienteExistente = await Cliente.findOne({ cpf: cpf });
+    const clienteExistente = await Cliente.findOne({ cpf });
     if (clienteExistente) {
       return res.status(400).json({ message: 'Já existe um cliente com este CPF.' });
     }
-    const novoCliente = new Cliente(req.body);
+
+    // --- CORREÇÃO AQUI ---
+    // Criamos o novo cliente combinando os dados do formulário (req.body)
+    // com o ID do usuário que veio do token (req.userId).
+    const novoCliente = new Cliente({
+      ...req.body,
+      user: req.userId,
+    });
+
     await novoCliente.save();
     res.status(201).json(novoCliente);
   } catch (error: any) {
@@ -37,7 +52,6 @@ export const getClientes = async (req: Request, res: Response) => {
   }
 };
 
-// --- FUNÇÃO FALTANTE ADICIONADA AQUI ---
 export const getClienteById = async (req: Request, res: Response) => {
   try {
     const cliente = await Cliente.findById(req.params.id);
