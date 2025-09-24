@@ -3,48 +3,30 @@
 import { Request, Response } from 'express';
 import Cliente from '../models/Cliente';
 
-// Definimos uma interface para a requisição que já passou pelo middleware de autenticação
-interface AuthRequest extends Request {
-  userId?: string;
-}
-
-export const createCliente = async (req: AuthRequest, res: Response) => {
+// Criar novo cliente
+export const createCliente = async (req: Request, res: Response) => {
   try {
-    const { cpf } = req.body;
-    const clienteExistente = await Cliente.findOne({ cpf });
-    if (clienteExistente) {
-      return res.status(400).json({ message: 'Já existe um cliente com este CPF.' });
-    }
-
-    // --- CORREÇÃO AQUI ---
-    // Criamos o novo cliente combinando os dados do formulário (req.body)
-    // com o ID do usuário que veio do token (req.userId).
-    const novoCliente = new Cliente({
-      ...req.body,
-      user: req.userId,
-    });
-
-    await novoCliente.save();
-    res.status(201).json(novoCliente);
+    const cliente = new Cliente(req.body);
+    await cliente.save();
+    res.status(201).json(cliente);
   } catch (error: any) {
-    res.status(500).json({ message: 'Erro ao criar cliente', error: error.message });
+    res.status(400).json({ message: 'Erro ao criar cliente', error: error.message });
   }
 };
 
+// Obter todos os clientes com lógica de busca por nome.
 export const getClientes = async (req: Request, res: Response) => {
   try {
     const { search } = req.query;
     let query = {};
-    if (search && typeof search === 'string') {
-      const searchRegex = new RegExp(search, 'i');
-      query = {
-        $or: [
-          { fullName: searchRegex },
-          { cpf: searchRegex },
-          { phone: searchRegex }
-        ]
-      };
+
+    // Se o parâmetro 'search' existir na URL, cria uma consulta para buscar
+    // clientes pelo 'fullName' de forma case-insensitive.
+    if (search) {
+      const searchRegex = new RegExp(search as string, 'i');
+      query = { fullName: searchRegex };
     }
+
     const clientes = await Cliente.find(query).sort({ fullName: 1 });
     res.status(200).json(clientes);
   } catch (error: any) {
@@ -52,11 +34,12 @@ export const getClientes = async (req: Request, res: Response) => {
   }
 };
 
+// Obter um cliente por ID
 export const getClienteById = async (req: Request, res: Response) => {
   try {
     const cliente = await Cliente.findById(req.params.id);
     if (!cliente) {
-      return res.status(404).json({ message: 'Cliente não encontrado.' });
+      return res.status(404).json({ message: 'Cliente não encontrado' });
     }
     res.status(200).json(cliente);
   } catch (error: any) {
@@ -64,25 +47,27 @@ export const getClienteById = async (req: Request, res: Response) => {
   }
 };
 
+// Atualizar um cliente
 export const updateCliente = async (req: Request, res: Response) => {
   try {
-    const clienteAtualizado = await Cliente.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!clienteAtualizado) {
-      return res.status(404).json({ message: 'Cliente não encontrado.' });
+    const cliente = await Cliente.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!cliente) {
+      return res.status(404).json({ message: 'Cliente não encontrado' });
     }
-    res.status(200).json(clienteAtualizado);
+    res.status(200).json(cliente);
   } catch (error: any) {
-    res.status(500).json({ message: 'Erro ao atualizar cliente', error: error.message });
+    res.status(400).json({ message: 'Erro ao atualizar cliente', error: error.message });
   }
 };
 
+// Deletar um cliente
 export const deleteCliente = async (req: Request, res: Response) => {
   try {
     const cliente = await Cliente.findByIdAndDelete(req.params.id);
     if (!cliente) {
-      return res.status(404).json({ message: 'Cliente não encontrado.' });
+      return res.status(404).json({ message: 'Cliente não encontrado' });
     }
-    res.status(200).json({ message: 'Cliente deletado com sucesso.' });
+    res.status(200).json({ message: 'Cliente deletado com sucesso' });
   } catch (error: any) {
     res.status(500).json({ message: 'Erro ao deletar cliente', error: error.message });
   }

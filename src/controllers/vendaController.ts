@@ -5,50 +5,46 @@ import Venda from '../models/Venda';
 import Produto from '../models/Produto';
 import mongoose from 'mongoose';
 
-// Interface para garantir que temos o userId da autenticação
-interface AuthRequest extends Request {
-  userId?: string;
-}
-
-export const createVenda = async (req: AuthRequest, res: Response) => {
+export const createVenda = async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { cliente, itens, pagamentos, valorPendenteEntrega, dataVenda } = req.body;
-    const vendedor = req.userId;
+    const { cliente, produtos, pagamento } = req.body;
 
-    // --- LÓGICA DE CÁLCULO NO SERVIDOR ---
-    // Calculamos os totais no backend para garantir a integridade dos dados
-    const valorTotal = itens.reduce((acc: number, item: any) => acc + (item.quantidade * item.precoUnitario), 0);
-    const valorPagoNaHora = pagamentos.reduce((acc: number, pag: any) => acc + pag.valor, 0);
-
-    // Validação de segurança para garantir que os valores correspondem
-    if (Math.abs(valorTotal - (valorPagoNaHora + (valorPendenteEntrega || 0))) > 0.01) {
+    for (const item of produtos) {
+      const produtoDB = await Produto.findById(item.produto).session(session);
+      if (!produtoDB) {
         await session.abortTransaction();
-        return res.status(400).json({ message: 'A soma dos pagamentos e do valor pendente não corresponde ao valor total da venda.' });
+        session.endSession();
+        return res.status(404).json({ message: `Produto com ID ${item.produto} não encontrado.` });
+      }
+      if (produtoDB.estoque < item.quantidade) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: `Estoque insuficiente para o produto: ${produtoDB.nome}. Disponível: ${produtoDB.estoque}` });
+      }
     }
+
+    const valorTotal = produtos.reduce((acc: number, item: any) => {
+      return acc + (item.quantidade * item.valorUnitario);
+    }, 0);
 
     const novaVenda = new Venda({
       cliente,
-      vendedor,
-      itens,
-      pagamentos,
+      produtos,
       valorTotal,
-      valorPagoNaHora,
-      valorPendenteEntrega: valorPendenteEntrega || 0,
-      dataVenda,
-      entregue: false, // Toda nova venda começa como "não entregue"
+      pagamento,
+      status: 'Pendente',
     });
     
     await novaVenda.save({ session });
 
-    // Lógica para dar baixa no estoque
-    for (const item of itens) {
+    for (const item of produtos) {
       await Produto.findByIdAndUpdate(
         item.produto,
         { $inc: { estoque: -item.quantidade } },
-        { session }
+        { new: true, session }
       );
     }
 
@@ -57,42 +53,55 @@ export const createVenda = async (req: AuthRequest, res: Response) => {
 
   } catch (error: any) {
     await session.abortTransaction();
-    res.status(500).json({ message: 'Erro ao criar venda', error: error.message });
+    console.error("Erro ao criar venda:", error.message);
+    res.status(500).json({ message: 'Erro interno ao criar venda', error: error.message });
   } finally {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     session.endSession();
   }
 };
 
-export const getVendas = async (req: Request, res: Response) => {
+export const getAllVendas = async (req: Request, res: Response) => {
   try {
     const vendas = await Venda.find()
-      .populate('cliente', 'fullName')
-      .populate('vendedor', 'nome')
+      .populate('cliente', 'fullName') 
+      .populate({
+        path: 'produtos.produto',
+        model: 'Produto',
+        select: 'nome'
+      })
       .sort({ dataVenda: -1 });
+
     res.status(200).json(vendas);
   } catch (error: any) {
+    console.error("Erro detalhado ao buscar vendas:", error);
     res.status(500).json({ message: 'Erro ao buscar vendas', error: error.message });
   }
 };
 
-// --- NOVA FUNÇÃO PARA ATUALIZAR STATUS DE ENTREGA ---
-export const marcarComoEntregue = async (req: Request, res: Response) => {
+export const updateVendaStatus = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const { status } = req.body;
+
+        if (!['Concluído', 'Cancelado'].includes(status)) {
+            return res.status(400).json({ message: 'Status inválido. Use "Concluído" ou "Cancelado".' });
+        }
+
         const venda = await Venda.findById(id);
 
         if (!venda) {
             return res.status(404).json({ message: 'Venda não encontrada.' });
         }
 
-        venda.entregue = true;
-        
-        // Se havia um valor pendente, ele é considerado pago no momento da entrega.
-        if (venda.valorPendenteEntrega > 0) {
-            // No futuro, poderíamos adicionar esta transação ao caixa automaticamente.
-            venda.valorPagoNaHora += venda.valorPendenteEntrega;
-            venda.valorPendenteEntrega = 0;
+        if (status === 'Concluído' && venda.pagamento) {
+            venda.pagamento.valorEntrada = venda.valorTotal;
+            venda.pagamento.valorRestante = 0;
         }
+
+        venda.status = status;
         
         await venda.save();
         res.status(200).json(venda);

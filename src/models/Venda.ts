@@ -1,56 +1,55 @@
 // Caminho: ERP-BACK-main/src/models/Venda.ts
 
-import { Schema, model, Document } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
-// Subdocumento para cada item da venda (permanece o mesmo)
-interface ItemVenda {
-  produto: Schema.Types.ObjectId;
+// Interface para o item de produto na venda
+export interface IProdutoVenda extends Document {
+  produto: mongoose.Schema.Types.ObjectId;
   quantidade: number;
-  precoUnitario: number;
+  valorUnitario: number;
 }
 
-// Subdocumento para cada forma de pagamento usada na venda
-interface Pagamento {
-  metodo: 'Dinheiro' | 'Pix' | 'Débito' | 'Crédito' | 'Boleto';
-  valor: number;
+// Interface para os detalhes de pagamento
+export interface IPagamento extends Document {
+  valorEntrada: number;
+  valorRestante: number;
+  metodoPagamento: 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Boleto';
+  condicaoPagamento: 'À vista' | 'A prazo';
   parcelas?: number;
 }
 
-// Interface principal da Venda, agora com os novos campos
+// Interface principal da Venda
 export interface IVenda extends Document {
-  cliente: Schema.Types.ObjectId;
-  vendedor: Schema.Types.ObjectId;
-  itens: ItemVenda[];
-  pagamentos: Pagamento[]; // AGORA É UM ARRAY DE PAGAMENTOS
+  cliente: mongoose.Schema.Types.ObjectId;
+  produtos: IProdutoVenda[];
   valorTotal: number;
-  valorPagoNaHora: number; // NOVO: Soma dos pagamentos feitos no ato da venda
-  valorPendenteEntrega: number; // NOVO: Valor a ser pago na entrega
-  entregue: boolean; // NOVO: Status da entrega
+  pagamento: IPagamento;
+  status: 'Pendente' | 'Concluído' | 'Cancelado';
   dataVenda: Date;
 }
 
-const VendaSchema = new Schema<IVenda>({
-  cliente: { type: Schema.Types.ObjectId, ref: 'Cliente', required: true },
-  vendedor: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  itens: [{
-    produto: { type: Schema.Types.ObjectId, ref: 'Produto', required: true },
-    quantidade: { type: Number, required: true },
-    precoUnitario: { type: Number, required: true },
-  }],
-  pagamentos: [{
-    metodo: {
-      type: String,
-      enum: ['Dinheiro', 'Pix', 'Débito', 'Crédito', 'Boleto'],
-      required: true,
-    },
-    valor: { type: Number, required: true },
-    parcelas: { type: Number, default: 1 },
-  }],
-  valorTotal: { type: Number, required: true },
-  valorPagoNaHora: { type: Number, required: true, default: 0 },
-  valorPendenteEntrega: { type: Number, required: true, default: 0 },
-  entregue: { type: Boolean, default: false },
-  dataVenda: { type: Date, required: true },
-}, { timestamps: true });
+const ProdutoVendaSchema: Schema = new Schema({
+  produto: { type: mongoose.Schema.Types.ObjectId, ref: 'Produto', required: true },
+  quantidade: { type: Number, required: true },
+  valorUnitario: { type: Number, required: true },
+});
 
-export default model<IVenda>('Venda', VendaSchema);
+const PagamentoSchema: Schema = new Schema({
+  valorEntrada: { type: Number, required: true, default: 0 },
+  valorRestante: { type: Number, required: true, default: 0 },
+  metodoPagamento: { type: String, enum: ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'PIX', 'Boleto'], required: true },
+  condicaoPagamento: { type: String, enum: ['À vista', 'A prazo'], required: true },
+  parcelas: { type: Number },
+});
+
+
+const VendaSchema: Schema = new Schema({
+  cliente: { type: mongoose.Schema.Types.ObjectId, ref: 'Cliente', required: true },
+  produtos: [ProdutoVendaSchema],
+  valorTotal: { type: Number, required: true },
+  pagamento: PagamentoSchema,
+  status: { type: String, enum: ['Pendente', 'Concluído', 'Cancelado'], default: 'Pendente' },
+  dataVenda: { type: Date, default: Date.now },
+});
+
+export default mongoose.model<IVenda>('Venda', VendaSchema);
