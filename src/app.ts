@@ -4,13 +4,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-
 // ... importações das rotas ...
 import authRoutes from './routes/authRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import clienteRoutes from './routes/clienteRoutes';
 import produtoRoutes from './routes/produtoRoutes';
-import vendaRoutes from './routes/vendaRoutes';
+import vendaRoutes from './routes/vendaRoutes'; // Importação da nova rota de vendas
 import boletoRoutes from './routes/boletoRoutes';
 import agendamentoRoutes from './routes/agendamentoRoutes';
 import insightRoutes from './routes/insightRoutes'; 
@@ -21,8 +20,6 @@ import caixaRoutes from './routes/caixaRoutes';
 dotenv.config();
 const app = express();
 
-// --- CORREÇÃO DE CORS AQUI ---
-// Definimos explicitamente quais origens (domínios) podem aceder à nossa API.
 const corsOptions = {
   origin: ['http://localhost:3000', 'https://erp-front-ebon.vercel.app'],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -30,8 +27,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// --- FIM DA CORREÇÃO ---
-
 app.use(express.json());
 
 // Rotas da Aplicação
@@ -39,7 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/produtos', produtoRoutes);
-app.use('/api/vendas', vendaRoutes);
+app.use('/api/vendas', vendaRoutes); // Registro da nova rota de vendas
 app.use('/api/boletos', boletoRoutes);
 app.use('/api/agendamentos', agendamentoRoutes);
 app.use('/api/insights', insightRoutes); 
