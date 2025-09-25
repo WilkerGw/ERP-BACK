@@ -1,27 +1,77 @@
 // Caminho: ERP-BACK-main/src/controllers/relatorioController.ts
 
 import { Request, Response } from 'express';
-// import Venda from '../models/Venda'; // Removido
+import Venda from '../models/Venda'; // Adicionamos a importação do modelo de Venda
 import Agendamento from '../models/Agendamento';
 import Boleto from '../models/Boleto';
 import mongoose from 'mongoose';
 
 const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-// --- FUNÇÕES DE VENDAS REMOVIDAS TEMPORARIAMENTE ---
-// Estas funções serão recriadas quando o novo módulo de Vendas estiver pronto.
+// --- LÓGICA DE FATURAMENTO MENSAL ---
 export const getFaturamentoMensal = async (req: Request, res: Response) => {
-  res.status(200).json([]);
+  try {
+    const dados = await Venda.aggregate([
+      { $match: { status: 'Concluído' } },
+      {
+        $group: {
+          _id: { ano: { $year: "$dataVenda" }, mes: { $month: "$dataVenda" } },
+          faturamento: { $sum: "$valorTotal" }
+        }
+      },
+      { $sort: { "_id.ano": 1, "_id.mes": 1 } },
+      { $limit: 12 },
+      {
+        $project: {
+          _id: 0,
+          mes: { 
+            $concat: [ 
+              { $arrayElemAt: [meses, { $subtract: ["$_id.mes", 1] }] },
+              "/",
+              { $toString: "$_id.ano" }
+            ]
+          },
+          "Faturamento": "$faturamento"
+        }
+      }
+    ]);
+    res.status(200).json(dados);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erro ao buscar faturamento mensal', error: error.message });
+  }
 };
 
+// --- LÓGICA DE VENDAS POR MÉTODO ---
 export const getVendasPorMetodo = async (req: Request, res: Response) => {
-  res.status(200).json([]);
+    try {
+      const dados = await Venda.aggregate([
+        { $match: { status: 'Concluído' } },
+        { $group: { _id: "$pagamento.metodoPagamento", value: { $sum: 1 } } },
+        { $project: { name: "$_id", value: 1, _id: 0 } }
+      ]);
+      res.status(200).json(dados);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Erro ao buscar vendas por método', error: error.message });
+    }
 };
 
+// --- LÓGICA DO TOP 5 CLIENTES ---
 export const getTopClientes = async (req: Request, res: Response) => {
-  res.status(200).json([]);
+    try {
+        const dados = await Venda.aggregate([
+            { $match: { status: 'Concluído' } },
+            { $group: { _id: "$cliente", totalGasto: { $sum: "$valorTotal" } } },
+            { $sort: { totalGasto: -1 } },
+            { $limit: 5 },
+            { $lookup: { from: 'clients', localField: '_id', foreignField: '_id', as: 'clienteInfo' } },
+            { $unwind: "$clienteInfo" },
+            { $project: { _id: 0, name: "$clienteInfo.fullName", "Total Gasto": "$totalGasto" } }
+        ]);
+        res.status(200).json(dados);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Erro ao buscar top clientes', error: error.message });
+    }
 };
-// --- FIM DA REMOÇÃO ---
 
 export const getEficienciaAgendamentos = async (req: Request, res: Response) => {
   try {

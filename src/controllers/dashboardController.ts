@@ -1,7 +1,7 @@
 // Caminho: ERP-BACK-main/src/controllers/dashboardController.ts
 
 import { Request, Response } from 'express';
-// import Venda from '../models/Venda'; // Removido
+import Venda from '../models/Venda'; // Adicionamos a importação do modelo de Venda
 import Boleto from '../models/Boleto';
 import Agendamento from '../models/Agendamento';
 import Cliente from '../models/Cliente';
@@ -9,13 +9,20 @@ import { getDashboardDateRanges } from '../utils/dateUtils';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
-    const { hoje, amanha, mesAtual, proximos7dias } = getDashboardDateRanges(new Date());
+    const { hoje, amanha, mesAtual, proximos7dias, inicioMes } = getDashboardDateRanges(new Date());
 
-    // --- LÓGICA DE VENDAS REMOVIDA ---
-    // Como o modelo de Venda foi removido, não podemos mais calcular estas métricas.
-    // Elas serão reintroduzidas quando construirmos o novo módulo de Vendas.
-    const totalVendasDia = 0;
-    const totalVendasMes = 0;
+    // --- LÓGICA DE VENDAS RESTAURADA ---
+    const vendasHojeAggregation = await Venda.aggregate([
+        { $match: { dataVenda: { $gte: hoje, $lt: amanha }, status: 'Concluído' } },
+        { $group: { _id: null, total: { $sum: '$valorTotal' } } }
+    ]);
+    const totalVendasDia = vendasHojeAggregation[0]?.total || 0;
+
+    const vendasMesAggregation = await Venda.aggregate([
+        { $match: { dataVenda: { $gte: inicioMes }, status: 'Concluído' } },
+        { $group: { _id: null, total: { $sum: '$valorTotal' } } }
+    ]);
+    const totalVendasMes = vendasMesAggregation[0]?.total || 0;
 
     const boletosVencidos = await Boleto.countDocuments({
       status: 'aberto',
