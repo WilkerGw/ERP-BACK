@@ -1,7 +1,7 @@
 // Caminho: ERP-BACK-main/src/middleware/validationMiddleware.ts
 
 import { Request, Response, NextFunction } from 'express';
-import { z, ZodError } from 'zod';
+import { z, ZodError, ZodIssue } from 'zod'; // Importa o tipo ZodIssue
 
 // Este middleware recebe um schema Zod e o usa para validar o corpo da requisição
 export const validate = (schema: z.ZodObject<any, any>) => {
@@ -11,8 +11,9 @@ export const validate = (schema: z.ZodObject<any, any>) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        // Formata os erros para serem mais legíveis no frontend
-        const errorMessages = error.errors.map((issue) => ({
+        // CORREÇÃO 1: A propriedade correta é 'issues', não 'errors'
+        // CORREÇÃO 2: Adicionamos o tipo 'ZodIssue' para o parâmetro 'issue'
+        const errorMessages = error.issues.map((issue: ZodIssue) => ({
             message: `${issue.path.join('.')} is ${issue.message.toLowerCase()}`,
         }));
         res.status(400).json({ error: 'Dados de entrada inválidos', details: errorMessages });

@@ -25,9 +25,9 @@ dotenv.config();
 const app = express();
 
 
-// --- NOVA SOLUÇÃO: MIDDLEWARE PARA TORNAR REQ.QUERY EDITÁVEL ---
-// Este middleware intercepta a requisição e torna a propriedade 'query' editável.
-// Deve ser uma das primeiras coisas que o app usa.
+// --- SOLUÇÃO: MIDDLEWARE PARA TORNAR REQ.QUERY EDITÁVEL ---
+// Este middleware intercepta a requisição e torna a propriedade 'query' editável,
+// resolvendo a incompatibilidade com o express-mongo-sanitize no Express 5.
 app.use((req, res, next) => {
   Object.defineProperty(req, 'query', {
     value: req.query,
@@ -35,7 +35,7 @@ app.use((req, res, next) => {
   });
   next();
 });
-// --- FIM DA NOVA SOLUÇÃO ---
+// --- FIM DA SOLUÇÃO ---
 
 
 const corsOptions = {
