@@ -18,3 +18,5 @@ Thumbs.db
 
 #fgh
 node_modules
+
+/node_modules
