@@ -3,16 +3,15 @@
 import { Router } from 'express';
 import { getCaixa, createTransacao } from '../controllers/caixaController';
 import { authMiddleware } from '../middleware/authMiddleware';
+import { validate } from '../middleware/validationMiddleware';
+import { TransacaoCaixaSchema } from '../lib/validators/caixaValidator';
 
 const router = Router();
 
-// Todas as rotas de caixa exigem autenticação
 router.use(authMiddleware);
-
-// Rota para buscar o histórico e o saldo
 router.get('/', getCaixa);
 
-// Rota para criar uma nova transação
-router.post('/', createTransacao);
+// Validação aplicada na criação da transação
+router.post('/', validate(TransacaoCaixaSchema), createTransacao);
 
 export default router;
