@@ -26,8 +26,8 @@ const app = express();
 
 
 // --- SOLUÇÃO: MIDDLEWARE PARA TORNAR REQ.QUERY EDITÁVEL ---
-// Este middleware intercepta a requisição e torna a propriedade 'query' editável,
-// resolvendo a incompatibilidade com o express-mongo-sanitize no Express 5.
+// Este middleware resolve a incompatibilidade com o express-mongo-sanitize no Express 5.
+// Ele deve ser uma das primeiras coisas que o app usa.
 app.use((req, res, next) => {
   Object.defineProperty(req, 'query', {
     value: req.query,
