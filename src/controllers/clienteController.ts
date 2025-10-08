@@ -3,13 +3,26 @@
 import { Request, Response } from 'express';
 import Cliente from '../models/Cliente';
 
+// Interface para estender o Request do Express e incluir o userId
+interface AuthRequest extends Request {
+  userId?: string;
+}
+
 // Criar novo cliente
-export const createCliente = async (req: Request, res: Response) => {
+export const createCliente = async (req: AuthRequest, res: Response) => {
   try {
-    const cliente = new Cliente(req.body);
+    // --- CORREÇÃO AQUI ---
+    // Adicionamos o ID do usuário (obtido pelo middleware de autenticação) ao corpo da requisição.
+    const clienteData = { ...req.body, user: req.userId };
+    const cliente = new Cliente(clienteData);
+    
     await cliente.save();
     res.status(201).json(cliente);
   } catch (error: any) {
+    // Mensagem de erro mais detalhada para o frontend.
+    if (error.code === 11000) {
+        return res.status(400).json({ message: 'Erro: Já existe um cliente com este CPF.' });
+    }
     res.status(400).json({ message: 'Erro ao criar cliente', error: error.message });
   }
 };
