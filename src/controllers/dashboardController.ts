@@ -1,7 +1,7 @@
 // Caminho: ERP-BACK-main/src/controllers/dashboardController.ts
 
 import { Request, Response } from 'express';
-import Venda from '../models/Venda'; // Adicionamos a importação do modelo de Venda
+import Venda from '../models/Venda';
 import Boleto from '../models/Boleto';
 import Agendamento from '../models/Agendamento';
 import Cliente from '../models/Cliente';
@@ -11,15 +11,17 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   try {
     const { hoje, amanha, mesAtual, proximos7dias, inicioMes } = getDashboardDateRanges(new Date());
 
-    // --- LÓGICA DE VENDAS RESTAURADA ---
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Agora, a consulta considera vendas com status 'Concluído' OU 'Pendente'.
     const vendasHojeAggregation = await Venda.aggregate([
-        { $match: { dataVenda: { $gte: hoje, $lt: amanha }, status: 'Concluído' } },
+        { $match: { dataVenda: { $gte: hoje, $lt: amanha }, status: { $in: ['Concluído', 'Pendente'] } } },
         { $group: { _id: null, total: { $sum: '$valorTotal' } } }
     ]);
     const totalVendasDia = vendasHojeAggregation[0]?.total || 0;
 
+    // --- CORREÇÃO APLICADA AQUI TAMBÉM ---
     const vendasMesAggregation = await Venda.aggregate([
-        { $match: { dataVenda: { $gte: inicioMes }, status: 'Concluído' } },
+        { $match: { dataVenda: { $gte: inicioMes }, status: { $in: ['Concluído', 'Pendente'] } } },
         { $group: { _id: null, total: { $sum: '$valorTotal' } } }
     ]);
     const totalVendasMes = vendasMesAggregation[0]?.total || 0;
