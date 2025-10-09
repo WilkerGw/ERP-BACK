@@ -80,7 +80,6 @@ export const updateCliente = async (req: Request, res: Response) => {
   }
 };
 
-// Deletar um cliente
 export const deleteCliente = async (req: Request, res: Response) => {
   try {
     const cliente = await Cliente.findByIdAndDelete(req.params.id);

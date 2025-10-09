@@ -4,7 +4,6 @@ import Agendamento from '../models/Agendamento';
 const getStatusFromBooleans = (agendamento: any): string => {
   if (agendamento.compareceu) return 'Compareceu';
   if (agendamento.faltou) return 'Faltou';
-  // Adicione aqui outras lógicas se tiver, por exemplo, um campo 'cancelado'
   return 'Aberto';
 };
 
