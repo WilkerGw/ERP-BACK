@@ -11,8 +11,6 @@ interface AuthRequest extends Request {
 // Criar novo cliente
 export const createCliente = async (req: AuthRequest, res: Response) => {
   try {
-    // --- CORREÇÃO AQUI ---
-    // Adicionamos o ID do usuário (obtido pelo middleware de autenticação) ao corpo da requisição.
     const clienteData = { ...req.body, user: req.userId };
     const cliente = new Cliente(clienteData);
     
@@ -27,17 +25,26 @@ export const createCliente = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Obter todos os clientes com lógica de busca por nome.
+// Obter todos os clientes com lógica de busca por nome ou CPF.
 export const getClientes = async (req: Request, res: Response) => {
   try {
     const { search } = req.query;
     let query = {};
 
-    // Se o parâmetro 'search' existir na URL, cria uma consulta para buscar
-    // clientes pelo 'fullName' de forma case-insensitive.
     if (search) {
-      const searchRegex = new RegExp(search as string, 'i');
-      query = { fullName: searchRegex };
+      const searchString = search as string;
+      
+      // Cria uma regex para busca case-insensitive
+      const searchRegex = new RegExp(searchString, 'i');
+      
+      // --- ALTERAÇÃO AQUI ---
+      // Agora a busca é feita por nome OU por CPF.
+      query = {
+        $or: [
+          { fullName: searchRegex },
+          { cpf: searchRegex }
+        ],
+      };
     }
 
     const clientes = await Cliente.find(query).sort({ fullName: 1 });
